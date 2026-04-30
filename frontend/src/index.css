@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Theme variables — match the original prototype 1:1 ─────────────────── */
+:root {
+  --primary:        #2563eb;
+  --primary-muted:  #93b4f8;
+  --bg:             #dfe3f1;
+  --bg-card:        #ffffff;
+  --bg-input:       #f8fafc;
+  --bg-hover:       #f1f5f9;
+  --sidebar-bg:     #1e293b;
+  --text:           #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+  --border:         #e2e8f0;
+
+  --badge-green-bg: #dcfce7; --badge-green-fg: #166534;
+  --badge-yellow-bg:#fef9c3; --badge-yellow-fg:#854d0e;
+  --badge-red-bg:   #fee2e2; --badge-red-fg:   #991b1b;
+  --badge-blue-bg:  #dbeafe; --badge-blue-fg:  #1e40af;
+  --badge-gray-bg:  #f1f5f9; --badge-gray-fg:  #475569;
+}
+
+[data-theme='dark'] {
+  --bg:             #0f172a;
+  --bg-card:        #1e293b;
+  --bg-input:       #0f172a;
+  --bg-hover:       #334155;
+  --sidebar-bg:     #0d1524;
+  --text:           #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+  --border:         #334155;
+
+  --badge-green-bg: #14532d; --badge-green-fg: #86efac;
+  --badge-yellow-bg:#422006; --badge-yellow-fg:#fcd34d;
+  --badge-red-bg:   #450a0a; --badge-red-fg:   #fca5a5;
+  --badge-blue-bg:  #1e3a5f; --badge-blue-fg:  #93c5fd;
+  --badge-gray-bg:  #1e293b; --badge-gray-fg:  #94a3b8;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Slim scrollbar to match the prototype */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+::selection { background: var(--primary); color: #fff; }
+
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}

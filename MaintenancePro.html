@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MaintenancePro — ERP/CMMS Industrial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+/* ─── CSS VARIABLES ────────────────────────────────── */
+:root {
+  --primary: #2563eb;
+  --primary-muted: #93b4f8;
+  --bg: #dfe3f1;
+  --bg-card: #ffffff;
+  --bg-input: #f8fafc;
+  --bg-hover: #f1f5f9;
+  --sidebar-bg: #1e293b;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --topbar-bg: #ffffff;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.06);
+  /* Badges */
+  --badge-green-bg: #dcfce7; --badge-green-fg: #166534;
+  --badge-yellow-bg: #fef9c3; --badge-yellow-fg: #854d0e;
+  --badge-red-bg: #fee2e2;   --badge-red-fg: #991b1b;
+  --badge-blue-bg: #dbeafe;  --badge-blue-fg: #1e40af;
+  --badge-gray-bg: #f1f5f9;  --badge-gray-fg: #475569;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #0f172a;
+  --bg-hover: #334155;
+  --sidebar-bg: #0d1524;
+  --sidebar-border: rgba(255,255,255,0.06);
+  --topbar-bg: #1e293b;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #334155;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.3);
+  --badge-green-bg: #14532d; --badge-green-fg: #86efac;
+  --badge-yellow-bg: #422006; --badge-yellow-fg: #fcd34d;
+  --badge-red-bg: #450a0a;   --badge-red-fg: #fca5a5;
+  --badge-blue-bg: #1e3a5f;  --badge-blue-fg: #93c5fd;
+  --badge-gray-bg: #1e293b;  --badge-gray-fg: #94a3b8;
+}
+
+/* ─── RESET ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%; overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root { height: 100%; width: 100%; }
+
+/* ─── SCROLLBAR ────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── INPUTS ───────────────────────────────────────── */
+input, select, textarea {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+/* ─── SELECTION ────────────────────────────────────── */
+::selection { background: var(--primary); color: #fff; }
+
+/* ─── TRANSITIONS ──────────────────────────────────── */
+* { transition-property: background-color, border-color, color, opacity;
+    transition-duration: 0.12s; transition-timing-function: ease; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="components/AppContext.jsx"></script>
+<script type="text/babel" src="components/Icons.jsx"></script>
+<script type="text/babel" src="components/Auth.jsx"></script>
+<script type="text/babel" src="components/Layout.jsx"></script>
+<script type="text/babel" src="components/Dashboard.jsx"></script>
+<script type="text/babel" src="components/Clients.jsx"></script>
+<script type="text/babel" src="components/Equipment.jsx"></script>
+<script type="text/babel" src="components/Maintenance.jsx"></script>
+<script type="text/babel" src="components/Export.jsx"></script>
+<script type="text/babel" src="components/QR.jsx"></script>
+<script type="text/babel" src="components/InventoryKitsAlerts.jsx"></script>
+<script type="text/babel" src="components/Traceability.jsx"></script>
+<script type="text/babel" src="components/ReportsSettings.jsx"></script>
+<script type="text/babel" src="components/MobileLayout.jsx"></script>
+<script type="text/babel" src="components/App.jsx"></script>
+</body>
+</html>
