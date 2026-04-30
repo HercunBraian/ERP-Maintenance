@@ -31,3 +31,7 @@ backend/.env*copy*
 
 # Vite cache
 frontend/.vite/
+
+# Local Netlify folder
+.netlify
+frontend/tsconfig.tsbuildinfo
