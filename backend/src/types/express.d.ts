@@ -1,3 +1,14 @@
-declare module 'express';
-declare module 'express-serve-static-core';
-declare module 'qrcode';
+import { Request } from 'express';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        role: string;
+      };
+      accessToken?: string;
+    }
+  }
+}
