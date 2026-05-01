@@ -211,9 +211,22 @@ export interface AdjustStockInput {
 }
 
 export interface Deposito {
-  id: string;
-  code: string;
-  name: string;
+  id:       string;
+  code:     string;
+  name:     string;
+  address?: string | null;
+}
+
+export interface EquipmentType {
+  id:         string;
+  name:       string;
+  created_at: string;
+}
+
+export interface EquipmentCategory {
+  id:         string;
+  name:       string;
+  created_at: string;
 }
 
 export interface KitDetail {

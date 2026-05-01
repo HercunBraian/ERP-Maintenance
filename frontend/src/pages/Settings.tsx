@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Shield, Wrench, Lock, Check, AlertTriangle, Edit2, Save, Plus,
-  Settings as SettingsIcon, Database, KeyRound, Trash2,
+  Settings as SettingsIcon, Database, KeyRound, Trash2, Cpu, Tag, Warehouse,
+  X,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { api, ApiError } from '../lib/api';
-import type { AppUser, UserCreateInput, UserUpdateInput } from '../lib/types';
+import type { AppUser, Deposito, EquipmentCategory, EquipmentType, UserCreateInput, UserUpdateInput } from '../lib/types';
 import { useAuth } from '../contexts/AuthContext';
 import { Avatar } from '../components/badges';
 import { Modal } from '../components/Modal';
@@ -37,6 +38,7 @@ export function Settings() {
       </div>
 
       <UsersSection currentUserId={user!.id} />
+      <CatalogSection />
       <SystemSection />
     </div>
   );
@@ -564,6 +566,289 @@ function ResetPasswordModal({ user, onClose }: { user: AppUser | null; onClose: 
         </form>
       )}
     </Modal>
+  );
+}
+
+// ─── Catalog (equipment types, categories, depositos) ────────────────────────
+
+function CatalogSection() {
+  const qc = useQueryClient();
+
+  // ── Equipment Types ──────────────────────────────────────────────────────
+  const typesQ = useQuery({
+    queryKey: ['catalog', 'equipment-types'],
+    queryFn:  () => api.catalog.listEquipmentTypes(),
+  });
+  const [newType, setNewType] = useState('');
+  const createTypeM = useMutation({
+    mutationFn: (name: string) => api.catalog.createEquipmentType(name),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['catalog', 'equipment-types'] }); setNewType(''); },
+  });
+  const deleteTypeM = useMutation({
+    mutationFn: (id: string) => api.catalog.deleteEquipmentType(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['catalog', 'equipment-types'] }),
+  });
+
+  // ── Equipment Categories ─────────────────────────────────────────────────
+  const catsQ = useQuery({
+    queryKey: ['catalog', 'equipment-categories'],
+    queryFn:  () => api.catalog.listEquipmentCategories(),
+  });
+  const [newCat, setNewCat] = useState('');
+  const createCatM = useMutation({
+    mutationFn: (name: string) => api.catalog.createEquipmentCategory(name),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['catalog', 'equipment-categories'] }); setNewCat(''); },
+  });
+  const deleteCatM = useMutation({
+    mutationFn: (id: string) => api.catalog.deleteEquipmentCategory(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['catalog', 'equipment-categories'] }),
+  });
+
+  // ── Depositos ────────────────────────────────────────────────────────────
+  const deposQ = useQuery({
+    queryKey: ['catalog', 'depositos'],
+    queryFn:  () => api.depositos.list(),
+  });
+  const [newDeposito, setNewDeposito] = useState({ code: '', name: '', address: '' });
+  const [editDeposito, setEditDeposito] = useState<Deposito | null>(null);
+  const createDepositoM = useMutation({
+    mutationFn: () => api.depositos.create({
+      code: newDeposito.code,
+      name: newDeposito.name,
+      address: newDeposito.address || undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['catalog', 'depositos'] });
+      setNewDeposito({ code: '', name: '', address: '' });
+    },
+  });
+  const updateDepositoM = useMutation({
+    mutationFn: (d: Deposito) => api.depositos.update(d.id, { code: d.code, name: d.name, address: d.address ?? undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['catalog', 'depositos'] }); setEditDeposito(null); },
+  });
+  const deleteDepositoM = useMutation({
+    mutationFn: (id: string) => api.depositos.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['catalog', 'depositos'] }),
+  });
+
+  const submitNewDeposito = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeposito.code.trim() || !newDeposito.name.trim()) return;
+    createDepositoM.mutate();
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-card mb-5 overflow-hidden">
+      <div className="px-5 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Database size={15} className="text-primary" />
+          <span className="text-sm font-bold text-fg">Catálogos del sistema</span>
+        </div>
+      </div>
+
+      <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Equipment Types */}
+        <CatalogList
+          icon={Cpu}
+          title="Tipos de equipo"
+          items={(typesQ.data ?? []) as EquipmentType[]}
+          onDelete={(id) => deleteTypeM.mutate(id)}
+          deleteBusy={deleteTypeM.isPending}
+          addSlot={
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (newType.trim()) createTypeM.mutate(newType.trim()); }}
+              className="flex gap-1.5 mt-3"
+            >
+              <input
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                placeholder="Ej: Compresor"
+                className={inputCls + ' text-xs py-1.5'}
+              />
+              <button
+                type="submit"
+                disabled={createTypeM.isPending || !newType.trim()}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-primary text-white text-xs font-bold rounded-lg disabled:opacity-50"
+              >
+                <Plus size={13} />
+              </button>
+            </form>
+          }
+        />
+
+        {/* Equipment Categories */}
+        <CatalogList
+          icon={Tag}
+          title="Categorías"
+          items={(catsQ.data ?? []) as EquipmentCategory[]}
+          onDelete={(id) => deleteCatM.mutate(id)}
+          deleteBusy={deleteCatM.isPending}
+          addSlot={
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (newCat.trim()) createCatM.mutate(newCat.trim()); }}
+              className="flex gap-1.5 mt-3"
+            >
+              <input
+                value={newCat}
+                onChange={(e) => setNewCat(e.target.value)}
+                placeholder="Ej: Neumática"
+                className={inputCls + ' text-xs py-1.5'}
+              />
+              <button
+                type="submit"
+                disabled={createCatM.isPending || !newCat.trim()}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-primary text-white text-xs font-bold rounded-lg disabled:opacity-50"
+              >
+                <Plus size={13} />
+              </button>
+            </form>
+          }
+        />
+
+        {/* Depositos */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-3">
+            <Warehouse size={14} className="text-primary" />
+            <span className="text-xs font-bold text-fg-subtle uppercase tracking-wider">Depósitos</span>
+          </div>
+
+          <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+            {(deposQ.data ?? []).map((d) => (
+              editDeposito?.id === d.id ? (
+                /* Inline edit row */
+                <div key={d.id} className="flex flex-col gap-1 bg-input-bg border border-primary/40 rounded-lg p-2">
+                  <div className="flex gap-1">
+                    <input
+                      value={editDeposito.code}
+                      onChange={(e) => setEditDeposito({ ...editDeposito, code: e.target.value })}
+                      className={inputCls + ' text-xs py-1 w-20'}
+                      placeholder="Código"
+                    />
+                    <input
+                      value={editDeposito.name}
+                      onChange={(e) => setEditDeposito({ ...editDeposito, name: e.target.value })}
+                      className={inputCls + ' text-xs py-1 flex-1'}
+                      placeholder="Nombre"
+                    />
+                  </div>
+                  <input
+                    value={editDeposito.address ?? ''}
+                    onChange={(e) => setEditDeposito({ ...editDeposito, address: e.target.value })}
+                    className={inputCls + ' text-xs py-1'}
+                    placeholder="Dirección (opcional)"
+                  />
+                  <div className="flex gap-1 justify-end">
+                    <button onClick={() => setEditDeposito(null)} className="text-xs text-fg-muted px-2 py-1 hover:bg-hover-bg rounded">Cancelar</button>
+                    <button
+                      onClick={() => updateDepositoM.mutate(editDeposito)}
+                      disabled={updateDepositoM.isPending}
+                      className="text-xs bg-primary text-white px-2 py-1 rounded font-semibold disabled:opacity-50"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={d.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-input-bg border border-border rounded-lg group">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11px] font-bold text-fg-subtle mr-1.5">{d.code}</span>
+                    <span className="text-xs text-fg truncate">{d.name}</span>
+                    {d.address && <div className="text-[10px] text-fg-subtle truncate">{d.address}</div>}
+                  </div>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditDeposito(d)} className="p-1 rounded hover:bg-hover-bg text-fg-muted">
+                      <Edit2 size={11} />
+                    </button>
+                    <button
+                      onClick={() => { if (window.confirm(`¿Eliminar depósito "${d.name}"?`)) deleteDepositoM.mutate(d.id); }}
+                      className="p-1 rounded hover:bg-hover-bg text-red-400"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              )
+            ))}
+            {deposQ.isFetched && (deposQ.data ?? []).length === 0 && (
+              <p className="text-xs text-fg-subtle py-2">Sin depósitos todavía.</p>
+            )}
+          </div>
+
+          <form onSubmit={submitNewDeposito} className="mt-3 space-y-1.5">
+            <div className="flex gap-1">
+              <input
+                value={newDeposito.code}
+                onChange={(e) => setNewDeposito((p) => ({ ...p, code: e.target.value }))}
+                placeholder="Código"
+                className={inputCls + ' text-xs py-1.5 w-20'}
+              />
+              <input
+                value={newDeposito.name}
+                onChange={(e) => setNewDeposito((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Nombre"
+                className={inputCls + ' text-xs py-1.5 flex-1'}
+              />
+            </div>
+            <div className="flex gap-1">
+              <input
+                value={newDeposito.address}
+                onChange={(e) => setNewDeposito((p) => ({ ...p, address: e.target.value }))}
+                placeholder="Dirección (opcional)"
+                className={inputCls + ' text-xs py-1.5 flex-1'}
+              />
+              <button
+                type="submit"
+                disabled={createDepositoM.isPending || !newDeposito.code.trim() || !newDeposito.name.trim()}
+                className="flex-shrink-0 px-2.5 py-1.5 bg-primary text-white text-xs font-bold rounded-lg disabled:opacity-50"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function CatalogList({
+  icon: Icon, title, items, onDelete, deleteBusy, addSlot,
+}: {
+  icon: typeof Cpu;
+  title: string;
+  items: Array<{ id: string; name: string }>;
+  onDelete: (id: string) => void;
+  deleteBusy: boolean;
+  addSlot: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <Icon size={14} className="text-primary" />
+        <span className="text-xs font-bold text-fg-subtle uppercase tracking-wider">{title}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5 max-h-52 overflow-y-auto">
+        {items.map((item) => (
+          <span
+            key={item.id}
+            className="flex items-center gap-1 bg-input-bg border border-border rounded-full px-2.5 py-1 text-xs text-fg group"
+          >
+            {item.name}
+            <button
+              onClick={() => { if (window.confirm(`¿Eliminar "${item.name}"?`)) onDelete(item.id); }}
+              disabled={deleteBusy}
+              className="text-fg-subtle hover:text-red-500 transition-colors ml-0.5"
+            >
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+        {items.length === 0 && <p className="text-xs text-fg-subtle py-1">Sin registros todavía.</p>}
+      </div>
+      {addSlot}
+    </div>
   );
 }
 

@@ -20,6 +20,8 @@ import type {
   Repuesto,
   RepuestoCreateInput,
   Deposito,
+  EquipmentType,
+  EquipmentCategory,
   Kit,
   KitDetail,
   KitCreateInput,
@@ -178,17 +180,27 @@ export const api = {
     remove: (id: string) => http.delete<void>(`/repuestos/${id}`),
   },
 
-  // Depósitos: read-only listing for selectors. Backend doesn't expose CRUD
-  // yet (admin-managed via SQL); we just need them in dropdowns.
   depositos: {
-    list:   () =>
-      // Reuse the stock endpoint to get distinct depositos via the join.
-      // Cheapest path until we add /api/depositos.
-      http.get<ApiList<StockRow>>('/stock', { limit: 500 }).then((r) => {
-        const map = new Map<string, Deposito>();
-        for (const row of r.rows) map.set(row.deposito.id, row.deposito);
-        return Array.from(map.values());
-      }),
+    list:   () => http.get<Deposito[]>('/catalog/depositos'),
+    create: (body: { code: string; name: string; address?: string }) =>
+              http.post<Deposito>('/catalog/depositos', body),
+    update: (id: string, body: Partial<{ code: string; name: string; address: string }>) =>
+              http.patch<Deposito>(`/catalog/depositos/${id}`, body),
+    remove: (id: string) => http.delete<void>(`/catalog/depositos/${id}`),
+  },
+
+  catalog: {
+    listEquipmentTypes:      () => http.get<EquipmentType[]>('/catalog/equipment-types'),
+    createEquipmentType:     (name: string) =>
+                               http.post<EquipmentType>('/catalog/equipment-types', { name }),
+    deleteEquipmentType:     (id: string) =>
+                               http.delete<void>(`/catalog/equipment-types/${id}`),
+
+    listEquipmentCategories: () => http.get<EquipmentCategory[]>('/catalog/equipment-categories'),
+    createEquipmentCategory: (name: string) =>
+                               http.post<EquipmentCategory>('/catalog/equipment-categories', { name }),
+    deleteEquipmentCategory: (id: string) =>
+                               http.delete<void>(`/catalog/equipment-categories/${id}`),
   },
 
   kits: {

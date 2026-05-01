@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
+import { api } from '../../lib/api';
 import type { Kit, KitCreateInput } from '../../lib/types';
 
 const FREQS: KitCreateInput['frequency'][] = ['1m', '3m', '6m', '12m', 'use'];
@@ -13,6 +15,12 @@ interface Props {
 }
 
 export function KitForm({ initial, onSubmit, onCancel, busy, error }: Props) {
+  const typesQ = useQuery({
+    queryKey: ['catalog', 'equipment-types'],
+    queryFn:  () => api.catalog.listEquipmentTypes(),
+    staleTime: 60_000,
+  });
+
   const [form, setForm] = useState<KitCreateInput>({
     code: initial?.code ?? '',
     name: initial?.name ?? '',
@@ -70,13 +78,20 @@ export function KitForm({ initial, onSubmit, onCancel, busy, error }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tipo de equipo" required>
-          <input
+          <select
             value={form.equipment_type}
             onChange={(e) => update('equipment_type', e.target.value)}
-            placeholder="compresor / bomba..."
             className={inputCls}
             required
-          />
+          >
+            <option value="">— Seleccionar tipo —</option>
+            {(typesQ.data ?? []).map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
+            ))}
+            {form.equipment_type && !(typesQ.data ?? []).some((t) => t.name === form.equipment_type) && (
+              <option value={form.equipment_type}>{form.equipment_type}</option>
+            )}
+          </select>
         </Field>
         <Field label="Marca">
           <input

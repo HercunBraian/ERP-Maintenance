@@ -4,6 +4,8 @@ import { AlertTriangle } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { Equipo, EquipoCreateInput } from '../../lib/types';
 
+const STALE = { staleTime: 60_000 };
+
 const INTERVALS = ['1m', '3m', '6m', '12m'] as const;
 
 interface Props {
@@ -17,8 +19,18 @@ interface Props {
 export function EquipoForm({ initial, onSubmit, onCancel, busy, error }: Props) {
   const clientesQ = useQuery({
     queryKey: ['clientes', 'all-for-equipo-form'],
-    queryFn: () => api.clientes.list({ limit: 200 }),
-    staleTime: 60_000,
+    queryFn:  () => api.clientes.list({ limit: 200 }),
+    ...STALE,
+  });
+  const typesQ = useQuery({
+    queryKey: ['catalog', 'equipment-types'],
+    queryFn:  () => api.catalog.listEquipmentTypes(),
+    ...STALE,
+  });
+  const catsQ = useQuery({
+    queryKey: ['catalog', 'equipment-categories'],
+    queryFn:  () => api.catalog.listEquipmentCategories(),
+    ...STALE,
   });
 
   const [form, setForm] = useState<EquipoCreateInput>({
@@ -81,21 +93,36 @@ export function EquipoForm({ initial, onSubmit, onCancel, busy, error }: Props) 
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tipo" required>
-          <input
+          <select
             value={form.type}
             onChange={(e) => update('type', e.target.value)}
-            placeholder="compresor / bomba / motor..."
             className={inputCls}
             required
-          />
+          >
+            <option value="">— Seleccionar tipo —</option>
+            {(typesQ.data ?? []).map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
+            ))}
+            {/* Keep current value selectable even if not in catalog */}
+            {form.type && !(typesQ.data ?? []).some((t) => t.name === form.type) && (
+              <option value={form.type}>{form.type}</option>
+            )}
+          </select>
         </Field>
         <Field label="Categoría">
-          <input
+          <select
             value={form.category ?? ''}
             onChange={(e) => update('category', e.target.value)}
-            placeholder="Neumática / Hidráulica..."
             className={inputCls}
-          />
+          >
+            <option value="">— Sin categoría —</option>
+            {(catsQ.data ?? []).map((c) => (
+              <option key={c.id} value={c.name}>{c.name}</option>
+            ))}
+            {form.category && !(catsQ.data ?? []).some((c) => c.name === form.category) && (
+              <option value={form.category}>{form.category}</option>
+            )}
+          </select>
         </Field>
       </div>
 
