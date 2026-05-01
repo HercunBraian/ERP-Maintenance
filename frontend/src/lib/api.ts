@@ -26,6 +26,7 @@ import type {
   KitDetail,
   KitCreateInput,
   AddKitPartInput,
+  SetThresholdsInput,
   TrazabilidadEquipo,
   TrazabilidadCliente,
   AppUser,
@@ -165,11 +166,12 @@ export const api = {
   },
 
   stock: {
-    list:      (q?: Query) => http.get<ApiList<StockRow>>('/stock', q),
-    adjust:    (body: AdjustStockInput) => http.post<{ stock: number }>('/stock/adjust', body),
-    movements: (repuestoId: string) =>
-               http.get<Array<{ id: string; tipo: string; qty: number; notes: string | null; created_at: string;
-                                deposito: { id: string; code: string; name: string } }>>(`/stock/movements/${repuestoId}`),
+    list:          (q?: Query) => http.get<ApiList<StockRow>>('/stock', q),
+    adjust:        (body: AdjustStockInput) => http.post<{ stock: number }>('/stock/adjust', body),
+    setThresholds: (body: SetThresholdsInput) => http.patch<StockRow>('/stock/thresholds', body),
+    movements:     (repuestoId: string) =>
+                   http.get<Array<{ id: string; tipo: string; qty: number; notes: string | null; created_at: string;
+                                    deposito: { id: string; code: string; name: string } }>>(`/stock/movements/${repuestoId}`),
   },
 
   repuestos: {

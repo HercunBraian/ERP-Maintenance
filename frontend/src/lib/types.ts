@@ -210,6 +210,13 @@ export interface AdjustStockInput {
   notes?: string;
 }
 
+export interface SetThresholdsInput {
+  repuesto_id:    string;
+  deposito_id:    string;
+  min_stock:      number;
+  critical_stock: number;
+}
+
 export interface Deposito {
   id:       string;
   code:     string;
