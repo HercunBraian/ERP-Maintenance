@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { mapPgError } from '../../lib/errors.js';
-import type { StockListQuery, AdjustStock } from './stock.schemas.js';
+import type { StockListQuery, AdjustStock, SetThresholds } from './stock.schemas.js';
 
 const SELECT = `
   id, stock, min_stock, critical_stock, updated_at,
@@ -43,6 +43,24 @@ export class StockRepository {
     });
     if (error) throw mapPgError(error);
     return { stock: data as number };
+  }
+
+  async setThresholds(input: SetThresholds) {
+    const { data, error } = await this.db
+      .from('stock_por_deposito')
+      .upsert(
+        {
+          repuesto_id:    input.repuesto_id,
+          deposito_id:    input.deposito_id,
+          min_stock:      input.min_stock,
+          critical_stock: input.critical_stock,
+        },
+        { onConflict: 'repuesto_id,deposito_id' },
+      )
+      .select(SELECT)
+      .single();
+    if (error) throw mapPgError(error);
+    return data;
   }
 
   async movements(repuestoId: string, limit = 50) {

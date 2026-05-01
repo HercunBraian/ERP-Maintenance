@@ -14,7 +14,7 @@ export const repuestoUpdateSchema = repuestoCreateSchema.partial();
 export const repuestoListQuerySchema = z.object({
   search: z.string().trim().optional(),
   with_stock: z.coerce.boolean().default(false),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(2000).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
 
