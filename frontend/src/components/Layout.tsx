@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Cpu, Wrench, Package, Boxes, Bell,
   ScanLine, ChartBar, Settings, ChevronLeft, ChevronRight,
-  Sun, Moon, LogOut, Plus,
+  Sun, Moon, LogOut, Plus, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Avatar } from './badges';
@@ -31,7 +31,8 @@ const VIEW_TITLES: Record<string, string> = {
   alertas: 'Alertas',
   trazabilidad: 'Trazabilidad',
   reportes: 'Reportes',
-  settings: 'Configuración',
+  settings:   'Configuración',
+  checklists: 'Plantillas de Checklist',
 };
 
 function useTheme() {
@@ -89,6 +90,22 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
         ))}
 
         <div className="h-px bg-white/[0.08] mx-1 my-3" />
+
+        {user?.role === 'admin' && (
+          <NavLink
+            to="/checklists"
+            className={({ isActive }) =>
+              `w-full flex items-center gap-2.5 rounded-lg mb-0.5 transition-colors text-sm font-medium ` +
+              (collapsed ? 'p-2.5 justify-center' : 'px-3 py-2.5') + ' ' +
+              (isActive
+                ? 'bg-primary text-white'
+                : 'text-white/50 hover:bg-white/[0.07] hover:text-white')
+            }
+          >
+            <ClipboardList size={17} strokeWidth={1.8} />
+            {!collapsed && <span className="whitespace-nowrap">Checklists</span>}
+          </NavLink>
+        )}
 
         <NavLink
           to="/settings"

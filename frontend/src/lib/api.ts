@@ -29,6 +29,10 @@ import type {
   AppUser,
   UserCreateInput,
   UserUpdateInput,
+  ChecklistTemplate,
+  ChecklistTemplateCreateInput,
+  EquipmentChecklist,
+  MaintenanceChecklist,
 } from './types';
 
 export class ApiError extends Error {
@@ -200,6 +204,45 @@ export const api = {
   trazabilidad: {
     equipo:  (id: string) => http.get<TrazabilidadEquipo>(`/trazabilidad/equipo/${id}`),
     cliente: (id: string) => http.get<TrazabilidadCliente>(`/trazabilidad/cliente/${id}`),
+  },
+
+  checklists: {
+    // Templates
+    listTemplates:   (q?: Query) => http.get<ApiList<ChecklistTemplate>>('/checklists/templates', q),
+    getTemplate:     (id: string) => http.get<ChecklistTemplate>(`/checklists/templates/${id}`),
+    createTemplate:  (body: ChecklistTemplateCreateInput) =>
+                       http.post<ChecklistTemplate>('/checklists/templates', body),
+    updateTemplate:  (id: string, body: Partial<ChecklistTemplateCreateInput>) =>
+                       http.patch<ChecklistTemplate>(`/checklists/templates/${id}`, body),
+    deleteTemplate:  (id: string) => http.delete<void>(`/checklists/templates/${id}`),
+
+    // Equipment assignment
+    getEquipmentChecklist: (equipoId: string) =>
+      http.get<EquipmentChecklist | null>(`/checklists/equipment/${equipoId}`),
+    assignChecklist: (equipoId: string, checklist_template_id: string) =>
+      http.post<EquipmentChecklist>(`/checklists/equipment/${equipoId}`, { checklist_template_id }),
+
+    // Maintenance execution
+    getMaintChecklist: (checklistId: string) =>
+      http.get<MaintenanceChecklist>(`/checklists/maintenance/${checklistId}`),
+    saveAnswers: (checklistId: string, answers: Record<string, string | number | boolean | null>) =>
+      http.patch<MaintenanceChecklist>(`/checklists/maintenance/${checklistId}`, { answers }),
+    completeChecklist: (checklistId: string) =>
+      http.post<MaintenanceChecklist>(`/checklists/maintenance/${checklistId}/complete`),
+
+    // PDF download
+    downloadPdf: async (mantId: string) => {
+      const url = buildUrl(`/mantenimientos/${mantId}/pdf`);
+      const res = await fetch(url, { headers: await authHeader() });
+      if (!res.ok) throw new ApiError(res.status, 'PDFError', 'PDF download failed');
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `mantenimiento-${mantId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(objUrl);
+    },
   },
 
   scan: {

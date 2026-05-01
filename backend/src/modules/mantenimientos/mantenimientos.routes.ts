@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as ctl from './mantenimientos.controller.js';
+import { downloadPdf } from '../checklists/checklists.controller.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import { asyncHandler } from '../../lib/errors.js';
@@ -32,6 +33,9 @@ router.delete('/:id', validate(idParamSchema, 'params'), asyncHandler(ctl.remove
 router.post('/:id/start',    validate(idParamSchema, 'params'), asyncHandler(ctl.start));
 router.post('/:id/complete', validate(idParamSchema, 'params'), asyncHandler(ctl.complete));
 router.post('/:id/cancel',   validate(idParamSchema, 'params'), asyncHandler(ctl.cancel));
+
+// PDF report
+router.get('/:id/pdf', validate(idParamSchema, 'params'), asyncHandler(downloadPdf));
 
 // Parts consumed
 router.post('/:id/parts',

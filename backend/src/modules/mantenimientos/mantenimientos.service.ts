@@ -1,9 +1,13 @@
 import { AppError } from '../../lib/errors.js';
 import type { MantenimientosRepository } from './mantenimientos.repository.js';
 import type { MantCreate, MantUpdate, MantListQuery, AddPart } from './mantenimientos.schemas.js';
+import type { ChecklistsRepository } from '../checklists/checklists.repository.js';
 
 export class MantenimientosService {
-  constructor(private readonly repo: MantenimientosRepository) {}
+  constructor(
+    private readonly repo: MantenimientosRepository,
+    private readonly checklistRepo?: ChecklistsRepository,
+  ) {}
 
   list(opts: MantListQuery) {
     return this.repo.list(opts);
@@ -19,7 +23,27 @@ export class MantenimientosService {
     // Always derive cliente_id from the equipo to keep them consistent.
     const cliente_id = await this.repo.equipoClienteId(input.equipo_id);
     if (!cliente_id) throw new AppError(404, 'Equipo not found', 'EquipoNotFound');
-    return this.repo.create({ ...input, cliente_id });
+    const mant = await this.repo.create({ ...input, cliente_id });
+
+    // Auto-create checklist for preventive maintenances (silent if no checklist assigned).
+    if (this.checklistRepo && (input.tipo === 'preventive-6m' || input.tipo === 'preventive-12m')) {
+      try {
+        const assignment = await this.checklistRepo.getEquipmentChecklist(input.equipo_id);
+        if (assignment?.checklist_template_id) {
+          const template = await this.checklistRepo.getTemplate(assignment.checklist_template_id);
+          if (template?.items?.length) {
+            await this.checklistRepo.createForMaintenance(
+              (mant as unknown as { id: string }).id,
+              template.items,
+            );
+          }
+        }
+      } catch {
+        // Never fail the maintenance creation because of a checklist error.
+      }
+    }
+
+    return mant;
   }
 
   update(id: string, patch: MantUpdate) {

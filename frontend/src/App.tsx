@@ -22,6 +22,8 @@ import { Settings } from './pages/Settings';
 import { MobHome } from './pages/mobile/MobHome';
 import { MobEquipos } from './pages/mobile/MobEquipos';
 import { MobPerfil } from './pages/mobile/MobPerfil';
+import { MantenimientoDetail } from './pages/MantenimientoDetail';
+import { ChecklistTemplates } from './pages/ChecklistTemplates';
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -76,7 +78,9 @@ function AppRoutes() {
       <Route path="/clientes"       element={<Clientes />} />
       <Route path="/clientes/:id"   element={<ClienteDetail />} />
       <Route path="/equipos/:id"    element={<EquipoDetail />} />
-      <Route path="/mantenimientos" element={<Mantenimientos />} />
+      <Route path="/mantenimientos"      element={<Mantenimientos />} />
+      <Route path="/mantenimientos/:id"  element={<MantenimientoDetail />} />
+      <Route path="/checklists"          element={<ChecklistTemplates />} />
       <Route path="/inventario"     element={<Inventario />} />
       <Route path="/kits"           element={<Kits />} />
       <Route path="/alertas"        element={<Alertas />} />

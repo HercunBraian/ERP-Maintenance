@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronLeft, Cpu, Edit2, Trash2, QrCode, Wrench, Package, AlertTriangle,
+  ChevronLeft, ClipboardList, Cpu, Edit2, Trash2, QrCode, Wrench, Package, AlertTriangle,
   CheckCircle, Clock, Loader2, MapPin, Calendar,
 } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
-import type { EquipoUpdateInput } from '../lib/types';
+import type { ChecklistTemplate, EquipoUpdateInput } from '../lib/types';
 import { StatusBadge, MantTipoBadge } from '../components/badges';
 import { Modal } from '../components/Modal';
 import { QRModal } from '../components/QRModal';
@@ -24,6 +24,7 @@ export function EquipoDetail() {
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [showChecklistAssign, setShowChecklistAssign] = useState(false);
 
   const fullQ = useQuery({
     queryKey: ['equipo-full', id],
@@ -35,6 +36,20 @@ export function EquipoDetail() {
     queryKey: ['equipo', id],
     queryFn: () => api.equipos.get(id!),
     enabled: !!id,
+  });
+
+  const checklistQ = useQuery({
+    queryKey: ['equipment-checklist', id],
+    queryFn:  () => api.checklists.getEquipmentChecklist(id!),
+    enabled:  !!id,
+  });
+
+  const assignChecklistM = useMutation({
+    mutationFn: (templateId: string) => api.checklists.assignChecklist(id!, templateId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['equipment-checklist', id] });
+      setShowChecklistAssign(false);
+    },
   });
 
   useRealtime('rt-equipo-detail', 'mantenimientos', useCallback(() => {
@@ -248,6 +263,39 @@ export function EquipoDetail() {
         </div>
       </div>
 
+      {/* Checklist assignment */}
+      <div className="mt-5 bg-card border border-border rounded-xl overflow-hidden shadow-card">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardList size={15} className="text-primary" />
+            <span className="text-sm font-bold text-fg">Plantilla de checklist</span>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={() => setShowChecklistAssign(true)}
+              className="text-xs text-primary font-semibold hover:opacity-80"
+            >
+              {checklistQ.data ? 'Cambiar' : 'Asignar'}
+            </button>
+          )}
+        </div>
+        <div className="px-5 py-4">
+          {checklistQ.isLoading ? (
+            <Loader2 size={14} className="animate-spin text-fg-subtle" />
+          ) : checklistQ.data?.template ? (
+            <div>
+              <div className="text-sm font-semibold text-fg">{checklistQ.data.template.name}</div>
+              <div className="text-xs text-fg-subtle mt-0.5">
+                {checklistQ.data.template.equipment_type} · v{checklistQ.data.template.version} ·{' '}
+                {checklistQ.data.template.items.length} items
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-fg-subtle">Sin plantilla asignada.</p>
+          )}
+        </div>
+      </div>
+
       <QRModal
         open={showQR}
         onClose={() => setShowQR(false)}
@@ -273,6 +321,21 @@ export function EquipoDetail() {
           />
         </Modal>
       )}
+
+      <Modal
+        open={showChecklistAssign}
+        onClose={() => setShowChecklistAssign(false)}
+        title="Asignar plantilla de checklist"
+        maxWidth={520}
+      >
+        <ChecklistAssignPicker
+          equipoType={equipo.type}
+          currentTemplateId={checklistQ.data?.checklist_template_id ?? null}
+          onSelect={(tid) => assignChecklistM.mutate(tid)}
+          busy={assignChecklistM.isPending}
+          onCancel={() => setShowChecklistAssign(false)}
+        />
+      </Modal>
     </div>
   );
 }
@@ -316,4 +379,83 @@ function Empty({ msg }: { msg: string }) {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <div className="h-full flex items-center justify-center text-fg-subtle">{children}</div>;
+}
+
+function ChecklistAssignPicker({
+  equipoType,
+  currentTemplateId,
+  onSelect,
+  busy,
+  onCancel,
+}: {
+  equipoType:        string;
+  currentTemplateId: string | null;
+  onSelect:          (id: string) => void;
+  busy:              boolean;
+  onCancel:          () => void;
+}) {
+  const [selected, setSelected] = useState<string>(currentTemplateId ?? '');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['checklist-templates', equipoType],
+    queryFn:  () => api.checklists.listTemplates({ equipment_type: equipoType, is_active: true }),
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-4 text-fg-subtle text-sm">
+          <Loader2 size={14} className="animate-spin" /> Cargando plantillas…
+        </div>
+      ) : !data?.rows.length ? (
+        <p className="text-sm text-fg-subtle py-4">
+          No hay plantillas activas para el tipo "{equipoType}".
+          Creá una desde Ajustes → Plantillas de Checklist.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {(data.rows as ChecklistTemplate[]).map((t) => (
+            <label
+              key={t.id}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                selected === t.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:bg-hover-bg'
+              }`}
+            >
+              <input
+                type="radio"
+                name="template"
+                value={t.id}
+                checked={selected === t.id}
+                onChange={() => setSelected(t.id)}
+                className="accent-primary"
+              />
+              <div>
+                <div className="text-sm font-semibold text-fg">{t.name}</div>
+                <div className="text-xs text-fg-subtle">v{t.version} · {t.items.length} items</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 pt-2 border-t border-border">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 rounded-lg border border-border text-fg-muted text-sm font-semibold hover:bg-hover-bg"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => selected && onSelect(selected)}
+          disabled={!selected || busy}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50"
+        >
+          {busy && <Loader2 size={14} className="animate-spin" />}
+          Asignar
+        </button>
+      </div>
+    </div>
+  );
 }

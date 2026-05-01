@@ -99,8 +99,58 @@ export interface Mantenimiento {
   cliente?: ClienteRef;
 }
 
+// ─── Checklist types ─────────────────────────────────────────────────────────
+
+export type ChecklistItemType = 'boolean' | 'number' | 'text' | 'section';
+export type ChecklistStatus   = 'in_progress' | 'completed';
+
+export interface ChecklistItem {
+  id:       string;
+  label:    string;
+  type:     ChecklistItemType;
+  required?: boolean;
+  unit?:    string;
+}
+
+export interface ChecklistTemplate {
+  id:             string;
+  name:           string;
+  equipment_type: string;
+  version:        number;
+  is_active:      boolean;
+  items:          ChecklistItem[];
+  created_at:     string;
+  updated_at:     string;
+}
+
+export interface EquipmentChecklist {
+  id:                    string;
+  equipo_id:             string;
+  checklist_template_id: string;
+  template:              ChecklistTemplate;
+}
+
+export interface MaintenanceChecklist {
+  id:               string;
+  mantenimiento_id: string;
+  template_snapshot: ChecklistItem[];
+  answers:          Record<string, string | number | boolean | null>;
+  status:           ChecklistStatus;
+  started_at:       string;
+  completed_at:     string | null;
+}
+
+export interface ChecklistTemplateCreateInput {
+  name:           string;
+  equipment_type: string;
+  items:          ChecklistItem[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface MantenimientoDetail extends Mantenimiento {
   equipo: EquipoRef & { status: EquipmentStatus; location: string | null };
+  technician?: { id: string; full_name: string } | null;
   kit?: { id: string; code: string; name: string; frequency: string; estimated_time_min: number } | null;
   parts: Array<{
     id: string;
@@ -109,6 +159,7 @@ export interface MantenimientoDetail extends Mantenimiento {
     repuesto: { id: string; code: string; name: string; unit: string; price: number };
     deposito: { id: string; code: string; name: string } | null;
   }>;
+  checklist?: MaintenanceChecklist | null;
 }
 
 export interface MantCreateInput {

@@ -2,10 +2,16 @@ import type { Request, Response } from 'express';
 import { supabaseAsUser } from '../../lib/supabase.js';
 import { MantenimientosRepository } from './mantenimientos.repository.js';
 import { MantenimientosService } from './mantenimientos.service.js';
+import { ChecklistsRepository } from '../checklists/checklists.repository.js';
 import type { MantCreate, MantUpdate, MantListQuery, AddPart } from './mantenimientos.schemas.js';
 
-const service = (req: Request) =>
-  new MantenimientosService(new MantenimientosRepository(supabaseAsUser(req.accessToken!)));
+const service = (req: Request) => {
+  const db = supabaseAsUser(req.accessToken!);
+  return new MantenimientosService(
+    new MantenimientosRepository(db),
+    new ChecklistsRepository(db),
+  );
+};
 
 export const list = async (req: Request, res: Response) =>
   res.json(await service(req).list(req.query as unknown as MantListQuery));

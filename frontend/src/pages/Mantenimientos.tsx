@@ -7,7 +7,6 @@ import type { MantCreateInput, MantStatus } from '../lib/types';
 import { StatusBadge, MantTipoBadge } from '../components/badges';
 import { Modal } from '../components/Modal';
 import { MantenimientoForm } from '../components/forms/MantenimientoForm';
-import { MantDetailModal } from '../components/MantDetailModal';
 import { useRealtime } from '../hooks/useRealtime';
 
 const STATUS_OPTS: Array<'all' | MantStatus> = [
@@ -30,7 +29,6 @@ export function Mantenimientos() {
   const [statusF, setStatusF] = useState<'all' | MantStatus>(
     initialStatus && STATUS_OPTS.includes(initialStatus) ? initialStatus : 'all',
   );
-  const [openDetail, setOpenDetail] = useState<string | null>(null);
 
   const list = useQuery({
     queryKey: ['mantenimientos', { statusF }],
@@ -103,7 +101,7 @@ export function Mantenimientos() {
               {(list.data?.rows ?? []).map((m) => (
                 <tr
                   key={m.id}
-                  onClick={() => setOpenDetail(m.id)}
+                  onClick={() => navigate(`/mantenimientos/${m.id}`)}
                   className="border-b border-border last:border-b-0 hover:bg-hover-bg cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 text-[13px] font-bold text-fg">{m.code}</td>
@@ -157,11 +155,6 @@ export function Mantenimientos() {
         />
       </Modal>
 
-      <MantDetailModal
-        open={!!openDetail}
-        onClose={() => setOpenDetail(null)}
-        mantId={openDetail}
-      />
     </div>
   );
 }

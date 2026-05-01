@@ -6,12 +6,14 @@ const DETAIL_SELECT = `
   *,
   equipo:equipos!inner(id, code, serial, model, brand, status, location),
   cliente:clientes!inner(id, code, name),
+  technician:users(id, full_name),
   kit:kits(id, code, name, frequency, estimated_time_min),
   parts:repuestos_usados(
     id, qty, created_at,
     repuesto:repuestos(id, code, name, unit, price),
     deposito:depositos(id, code, name)
-  )
+  ),
+  checklist:maintenance_checklists(id, template_snapshot, answers, status, started_at, completed_at)
 `;
 
 const LIST_SELECT = `

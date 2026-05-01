@@ -26,6 +26,7 @@ model ChecklistTemplate {
   @@map("checklist_templates")
 }
 
+
 model EquipmentChecklist {
   id                 String @id @default(cuid())
   equipmentId        String @unique @map("equipment_id")

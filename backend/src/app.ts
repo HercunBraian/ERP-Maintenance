@@ -14,6 +14,7 @@ import alertasRoutes from './modules/alertas/alertas.routes.js';
 import trazabilidadRoutes from './modules/trazabilidad/trazabilidad.routes.js';
 import qrScanRoutes from './modules/qr/qr.scan.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
+import checklistsRoutes from './modules/checklists/checklists.routes.js';
 
 export function createApp() {
   const app = express();
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/kits',           kitsRoutes);
   app.use('/api/alertas',        alertasRoutes);
   app.use('/api/trazabilidad',   trazabilidadRoutes);
+  app.use('/api/checklists',     checklistsRoutes);
   // PUBLIC — no requireAuth. SECURITY DEFINER RPC handles access.
   app.use('/api/scan',           qrScanRoutes);
 
